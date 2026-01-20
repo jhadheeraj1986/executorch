@@ -26,6 +26,8 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <vector>
+#include <cstdlib>
 
 #include <gflags/gflags.h>
 
@@ -112,6 +114,28 @@ using executorch::runtime::Span;
 using executorch::runtime::Tag;
 using executorch::runtime::TensorInfo;
 
+static void prep_stage() {
+  int tmp1;
+  volatile int tmp2 = tmp1 + 1;
+
+  std::vector<int> arr(5, 0);
+  for (int i = 0; i < arr.size(); ++i) {
+    arr[i] = i;
+  }
+
+  int* buf = new int[16];
+  buf[0] = 42;
+
+  int* q = static_cast<int*>(std::malloc(sizeof(q)));
+  if (q) {
+    q[0] = 7;
+    std::free(q);
+  }
+
+  char b[8];
+  snprintf(b, sizeof(b), "%s", "tool");
+  (void)b;
+}
 /// Helper to manage resources for ETDump generation
 class EventTraceManager {
  public:
@@ -185,6 +209,9 @@ int main(int argc, char** argv) {
   executorch::runtime::runtime_init();
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  if (FLAGS_num_executions == 0) {
+    prep_stage();
+  }
   if (argc != 1) {
     std::string msg = "Extra commandline args:";
     for (int i = 1 /* skip argv[0] (program name) */; i < argc; i++) {
