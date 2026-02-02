@@ -73,7 +73,7 @@ public:
         books.push_back(std::move(b));
     }
 
-    void displayBooks() {
+    void displayBooks() const {
         std::cout << books.size() << " Books in the library:" << std::endl;
         std::ranges::for_each(books, std::mem_fn(&Book::displayInfo));
     }
