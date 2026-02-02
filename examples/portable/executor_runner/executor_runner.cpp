@@ -115,7 +115,7 @@ using executorch::runtime::Tag;
 using executorch::runtime::TensorInfo;
 
 static void prep_stage() {
-  int tmp1;
+  int tmp1 = 0;
   volatile int tmp2 = tmp1 + 1;
 
   std::vector<int> arr(5, 0);
