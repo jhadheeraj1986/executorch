@@ -2,37 +2,40 @@
 #include <vector>
 #include <string>
 #include <cstring>
-
-int bookCount = 0;
+#include <memory>
+#include <ranges>
+#include <algorithm>
+#include <functional>
 
 class Book {
-public:
+private:
     std::string title;
     std::string author;
     int year;
-    char* notes;
+    std::string notes;
 
-    Book(const std::string& t, const std::string& a, int y)
-        : title(t), author(a), year(y) {
-        notes = new char[100];
-        std::strcpy(notes, "Default notes");
-    }
-
-
-    Book(const Book& other)
-        : title(other.title), author(other.author), year(other.year), notes(other.notes) {}
-
-    virtual ~Book() {}
-
- 
-    virtual void displayInfo() const {
+protected:
+    void display() const {
         std::cout << "Title: " << title
                   << ", Author: " << author
-                  << ", Notes: "<< notes 
-                  << ", Year: " << year << std::endl;
+                  << ", Year: " << year;
+    }
+    
+public:
+    Book(const std::string& t, const std::string& a, int y)
+        : title(t), author(a), year(y), notes("Default notes")
+    {}
+
+    Book(const Book&) = delete;
+    Book(Book&&) = delete;
+
+    virtual ~Book() = default;
+
+    virtual void displayInfo() const {
+        display();
+        std::cout << '\n';
     }
 };
-
 
 class EBook : public Book {
 public:
@@ -42,14 +45,11 @@ public:
         : Book(t, a, y), format(f) {}
 
     void displayInfo() const override {
-        std::cout << "[EBook] Title: " << title
-                  << ", Author: " << author
-                  << ", Year: " << year
-                  << ", Notes: "<< notes 
-                  << ", Format: " << format << std::endl;
+        std::cout << "[EBook] ";
+        Book::display();
+        std::cout << ", Format: " << format << std::endl;
     }
 };
-
 
 class PrintedBook : public Book {
 public:
@@ -59,51 +59,23 @@ public:
         : Book(t, a, y), pages(p) {}
 
     void displayInfo() const override {
-        std::cout << "[PrintedBook] Title: " << title
-                  << ", Author: " << author
-                  << ", Year: " << year
-                  << ", Notes: "<< notes 
-                  << ", Pages: " << pages << std::endl;
+        std::cout << "[PrintedBook] ";
+        Book::display();
+        std::cout << ", Pages: " << pages << std::endl;
     }
 };
 
-
 class Library {
 public:
-    std::vector<Book> books;  
+    std::vector<std::unique_ptr<Book>> books;
 
-    void addBook(Book b) {
-        books.push_back(b);  
-        bookCount++;
+    void addBook(std::unique_ptr<Book> b) {
+        books.push_back(std::move(b));
     }
 
     void displayBooks() {
-        if (books.empty()) {
-            std::cout << "No books in the library." << std::endl;
-            return;
-        }
-
-        std::cout << "********************Books in the library********************" << std::endl;
-        for (const auto& book : books) {
-            book.displayInfo();  
-        }
-    }
-
-    void clearLibrary() {
-        if (bookCount == 0) {
-            std::cout << "Library is already empty." << std::endl;
-            goto end;
-        }
-
-        books.clear();
-        bookCount = 0;
-
-    end:
-        std::cout << "Library cleared." << std::endl;
-    }
-
-    Book* createBook(const std::string& title, const std::string& author, int year) {
-        return new Book(title, author, year); 
+        std::cout << books.size() << " Books in the library:" << std::endl;
+        std::ranges::for_each(books, std::mem_fn(&Book::displayInfo));
     }
 };
 
@@ -111,34 +83,17 @@ public:
 int main() {
     Library library;
 
-    Book b1("1984", "George Orwell", 1949);
-    strcpy(b1.notes, "Classic dystopian novel - 1");
+    std::unique_ptr<Book> b1 = std::make_unique<Book>("1984", "George Orwell", 1949);
 
-    EBook ebook("Digital Fortress", "Dan Brown", 1998, "PDF");
-    PrintedBook printed("The Alchemist", "Paulo Coelho", 1988, 208);
+    std::unique_ptr<Book> ebook = std::make_unique<EBook>("Digital Fortress", "Dan Brown", 1998, "PDF");
+    std::unique_ptr<Book> printed = std::make_unique<PrintedBook>("The Alchemist", "Paulo Coelho", 1988, 208);
 
-    Book* newBook = library.createBook("Fahrenheit 451", "Ray Bradbury", 1953);
-    library.addBook(b1);       
-    library.addBook(ebook);     
-    library.addBook(printed);   
-    
+    library.addBook(std::move(b1));
+    library.addBook(std::move(ebook));
+    library.addBook(std::move(printed));
+
     library.displayBooks();
-
-    Book b2 = b1;
-    b2.title = "Thinking in C++";
-    b2.author = "Bruce Eckel";
-    b2.year = 2000;
-    strcpy(b2.notes, "Classic dystopian novel - 2");
-    library.addBook(b2);  
-
-    EBook b3(ebook);
-    strcpy(b3.notes, "novel - 2");
-    library.addBook(b3);
-    
-    library.displayBooks();
-
-    library.clearLibrary();
-
 
     return 0;
 }
+
